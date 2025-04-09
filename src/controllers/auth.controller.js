@@ -25,7 +25,7 @@ export const sendOTP = async (req, res) => {
       SELECT id FROM users WHERE phone = ${phone}
     `;
 
-    const response = await fetch(
+    await fetch(
       `https://graph.facebook.com/v17.0/${process.env.WAB_PHNO_ID}/messages`,
       {
         method: "POST",
@@ -69,8 +69,6 @@ export const sendOTP = async (req, res) => {
       }
     );
 
-    console.log(await response.json());
-
     const method = user ? "ToLogin" : "ToSignup";
 
     return ApiResponse(res, 200, { phone, method }, "OTP sent successfully");
@@ -95,7 +93,7 @@ export const finalizeAuth = async (req, res) => {
     }
 
     const [existingUser] = await sql`
-      SELECT id, phone, refresh_token FROM users WHERE phone = ${phone}
+      SELECT id, full_name, phone, refresh_token FROM users WHERE phone = ${phone}
     `;
 
     if (existingUser) {
@@ -126,7 +124,7 @@ export const finalizeAuth = async (req, res) => {
     const [newUser] = await sql`
     INSERT INTO users (id, full_name, phone, refresh_token)
     VALUES (${user_id}, ${full_name}, ${phone}, ${refresh_token})
-    RETURNING id, phone
+    RETURNING id, full_name, phone
     `;
 
     const access_token = await createAccessToken(refresh_token);
