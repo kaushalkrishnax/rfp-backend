@@ -59,7 +59,7 @@ export const sendOTP = async (req, res) => {
                 parameters: [
                   {
                     type: "text",
-                    text: `https://royalfoodplaza.vercel.app`,
+                    text: otp,
                   },
                 ],
               },
