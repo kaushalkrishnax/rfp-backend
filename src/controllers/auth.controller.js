@@ -25,6 +25,52 @@ export const sendOTP = async (req, res) => {
       SELECT id FROM users WHERE phone = ${phone}
     `;
 
+    const response = await fetch(
+      `https://graph.facebook.com/v17.0/${process.env.WAB_PHNO_ID}/messages`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.WAB_API_ACCESS_TOKEN}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messaging_product: "whatsapp",
+          to: `91${phone}`,
+          type: "template",
+          template: {
+            name: "verification_otp",
+            language: {
+              code: "en_US",
+            },
+            components: [
+              {
+                type: "body",
+                parameters: [
+                  {
+                    type: "text",
+                    text: otp.toString(),
+                  },
+                ],
+              },
+              {
+                type: "button",
+                sub_type: "url",
+                index: "0",
+                parameters: [
+                  {
+                    type: "text",
+                    text: `https://royalfoodplaza.vercel.app`,
+                  },
+                ],
+              },
+            ],
+          },
+        }),
+      }
+    );
+
+    console.log(await response.json());
+
     const method = user ? "ToLogin" : "ToSignup";
 
     return ApiResponse(res, 200, { phone, method }, "OTP sent successfully");
