@@ -15,18 +15,11 @@ app.use(express.json({ limit: "16kb" }));
 app.use(express.urlencoded({ extended: true, limit: "16kb" }));
 app.use(express.static(path.join(__dirname, "public")));
 
-/** List of allowed origins */
-const allowedOrigins = [
-  "http://localhost:3000",
-  "https://royalfoodplaza.vercel.app",
-];
-
 /** CORS Middleware */
 app.use((req, res, next) => {
-  const origin = req.get("Origin");
   const isApiRoute = req.path.startsWith("/api");
 
-  if (isApiRoute && allowedOrigins.includes(origin)) {
+  if (isApiRoute) {
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Credentials", "true");
     res.setHeader(
