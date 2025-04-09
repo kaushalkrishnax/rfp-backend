@@ -1,0 +1,29 @@
+{
+  "name": "rfp-backend",
+  "version": "1.0.0",
+  "description": "Royal Food Plaza App Backend",
+  "keywords": [
+    "Royal",
+    "Food",
+    "Plaza",
+    "RFp",
+    "Backend"
+  ],
+  "license": "ISC",
+  "author": "Kaushal Krishna, Ayush Aarya",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "postgres": "^3.4.5",
+    "uuid": "^11.1.0"
+  }
+}
