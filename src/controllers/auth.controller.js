@@ -14,10 +14,10 @@ export const sendOTP = async (req, res) => {
 
   try {
     await sql`
-      INSERT INTO user_otps (phone, otps)
+      INSERT INTO user_otps (phone, otp)
       VALUES (${phone}, ${otp})
       ON CONFLICT (phone) DO UPDATE
-      SET otps = ${otp}
+      SET otp = ${otp}
     `;
 
     const [user] = await sql`
@@ -76,6 +76,26 @@ export const sendOTP = async (req, res) => {
   }
 };
 
+export const refreshAccessToken = async (req, res) => {
+  const { refresh_token } = req.body;
+
+  if (!refresh_token)
+    return ApiResponse(res, 400, null, "Missing 'refresh_token'");
+
+  try {
+    const access_token = await createAccessToken(refresh_token);
+
+    return ApiResponse(res, 200, { access_token }, "Access token refreshed");
+  } catch (error) {
+    return ApiResponse(
+      res,
+      403,
+      null,
+      error.message || "Invalid or expired refresh token"
+    );
+  }
+};
+
 export const finalizeAuth = async (req, res) => {
   const { phone, otp, full_name } = req.body || {};
   if (!phone || !otp)
@@ -83,10 +103,10 @@ export const finalizeAuth = async (req, res) => {
 
   try {
     const [entry] = await sql`
-      SELECT otps FROM user_otps WHERE phone = ${phone}
+      SELECT otp FROM user_otps WHERE phone = ${phone}
     `;
 
-    if (!entry || entry.otps !== otp.toString()) {
+    if (!entry || entry.otp !== otp.toString()) {
       return ApiResponse(res, 401, null, "Invalid or expired OTP");
     }
 
@@ -95,9 +115,7 @@ export const finalizeAuth = async (req, res) => {
     `;
 
     if (existingUser) {
-      const access_token = await createAccessToken({
-        refresh_token: existingUser.refresh_token,
-      });
+      const access_token = await createAccessToken(existingUser.refresh_token);
 
       return ApiResponse(
         res,

@@ -5,7 +5,7 @@ import {
   addMenuCategory,
   removeMenuCategory,
   updateMenuCategory,
-  addItemsToCategory,
+  addItemToCategory,
   removeItemFromCategory,
   updateMenuItem,
 } from "../controllers/menu.controller.js";
@@ -14,14 +14,14 @@ import { verifyToken } from "../middlewares/auth.middleware.js";
 const router = Router();
 
 router.get("/categories", getCategories);
-router.get("/categories/:category_id", getItemsByCategory);
+router.get("/categories/:id", getItemsByCategory);
 
 router.post("/categories/add", verifyToken, addMenuCategory);
 router.delete("/categories/remove/:id", verifyToken, removeMenuCategory);
-router.put("/categories/update/:id", verifyToken, updateMenuCategory);
+router.put("/categories/update", verifyToken, updateMenuCategory);
 
-router.post("/items/add", verifyToken, addItemsToCategory);
-router.delete("/items/remove/:item_id", verifyToken, removeItemFromCategory);
-router.put("/items/update/:item_id", verifyToken, updateMenuItem);
+router.post("/items/add", verifyToken, addItemToCategory);
+router.delete("/items/remove/:id", verifyToken, removeItemFromCategory);
+router.put("/items/update", verifyToken, updateMenuItem);
 
 export default router;

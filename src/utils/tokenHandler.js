@@ -41,10 +41,3 @@ export async function createAccessToken(refresh_token) {
 
   return access_token;
 }
-
-/**
- * ✅ Refresh Access Token
- */
-export async function refreshAccessToken({ refresh_token }) {
-  return await createAccessToken({ refresh_token });
-}

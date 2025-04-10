@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from "uuid";
 import { sql } from "../db/index.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 
@@ -6,7 +7,7 @@ export async function getCategories(req, res) {
     const categories = await sql`
       SELECT * FROM menu_categories
     `;
-    return ApiResponse(res, 200, categories);
+    return ApiResponse(res, 200, categories, "Categories fetched successfully");
   } catch (err) {
     console.error("Error fetching categories:", err);
     return ApiResponse(res, 500, null, "Failed to fetch categories");
@@ -14,13 +15,22 @@ export async function getCategories(req, res) {
 }
 
 export async function getItemsByCategory(req, res) {
-  const { category_id } = req.params;
+  const { id } = req.params;
+
+  if (!id) {
+    return ApiResponse(res, 400, null, "Invalid request params");
+  }
 
   try {
     const items = await sql`
-      SELECT * FROM menu_items WHERE category_id = ${category_id}
+      SELECT * FROM menu_items WHERE category_id = ${id}
     `;
-    return ApiResponse(res, 200, items);
+
+    const formattedItems = items.map((item) => ({
+      ...item,
+      variants: JSON.parse(item.variants),
+    }));
+    return ApiResponse(res, 200, formattedItems, "Items fetched successfully");
   } catch (err) {
     console.error("Error fetching items:", err);
     return ApiResponse(res, 500, null, "Failed to fetch items");
@@ -28,14 +38,25 @@ export async function getItemsByCategory(req, res) {
 }
 
 export async function addMenuCategory(req, res) {
-  const { category_id, name, image } = req.body;
+  const { name, image } = req.body;
+
+  if (!name || !image) {
+    return ApiResponse(res, 400, null, "Invalid request body");
+  }
+
+  const id = uuidv4();
 
   try {
     await sql`
       INSERT INTO menu_categories (id, name, image)
-      VALUES (${category_id}, ${name}, ${image})
+      VALUES (${id}, ${name}, ${image})
     `;
-    return ApiResponse(res, 201, null, "Category added successfully");
+    return ApiResponse(
+      res,
+      201,
+      { id, name, image },
+      "Category added successfully"
+    );
   } catch (err) {
     console.error("Error adding category:", err);
     return ApiResponse(res, 500, null, "Failed to add category");
@@ -43,11 +64,15 @@ export async function addMenuCategory(req, res) {
 }
 
 export async function removeMenuCategory(req, res) {
-  const { item_id } = req.params;
+  const { id } = req.params;
+
+  if (!id) {
+    return ApiResponse(res, 400, null, "Invalid request params");
+  }
 
   try {
     await sql`
-      DELETE FROM menu_categories WHERE id = ${item_id}
+      DELETE FROM menu_categories WHERE id = ${id}
     `;
     return ApiResponse(res, 200, null, "Category removed successfully");
   } catch (err) {
@@ -57,53 +82,83 @@ export async function removeMenuCategory(req, res) {
 }
 
 export async function updateMenuCategory(req, res) {
-  const { category_id, name, image } = req.body;
+  const { id, name, image } = req.body;
+
+  if (!id || !name || !image) {
+    return ApiResponse(res, 400, null, "Invalid request body");
+  }
 
   try {
     await sql`
       UPDATE menu_categories
       SET name = ${name}, image = ${image}
-      WHERE id = ${category_id}
+      WHERE id = ${id}
     `;
-    return ApiResponse(res, 200, null, "Category updated successfully");
+    return ApiResponse(
+      res,
+      200,
+      { id, name, image },
+      "Category updated successfully"
+    );
   } catch (err) {
     console.error("Error updating category:", err);
     return ApiResponse(res, 500, null, "Failed to update category");
   }
 }
 
-export async function addItemsToCategory(req, res) {
-  const { category_id, items } = req.body;
+export async function addItemToCategory(req, res) {
+  const { category_id, name, variants } = req.body;
 
-  if (!Array.isArray(items) || items.length === 0) {
-    return res.status(400).json({ error: "No items provided" });
+  if (
+    !category_id ||
+    !name ||
+    !Array.isArray(variants) ||
+    variants.length === 0
+  ) {
+    return ApiResponse(res, 400, null, "Invalid request body");
   }
 
-  const values = items.map((item) => [
-    item.id,
-    item.name,
-    item.price,
-    category_id,
-  ]);
+  const cleanedVariants = variants
+    .map((v) => ({
+      name: v.name.trim(),
+      price: parseFloat(v.price),
+    }))
+    .filter((v) => v.name && !isNaN(v.price) && v.price >= 0);
+
+  if (cleanedVariants.length === 0) {
+    return ApiResponse(res, 400, null, "Invalid variants");
+  }
+
+  const id = uuidv4();
 
   try {
     await sql`
-      INSERT INTO menu_items (id, name, description, price, category_id)
-      VALUES ${sql(values)}
+      INSERT INTO menu_items (id, category_id, name, variants)
+      VALUES (${id}, ${category_id}, ${name}, ${JSON.stringify(variants)})
     `;
-    return ApiResponse(res, 201, null, "Items added successfully");
+
+    return ApiResponse(
+      res,
+      201,
+      { id, category_id, name, variants },
+      "Item added successfully"
+    );
   } catch (err) {
-    console.error("Error adding items:", err);
-    return ApiResponse(res, 500, null, "Failed to add items");
+    console.error("Error adding item:", err);
+    return ApiResponse(res, 500, null, "Failed to add item");
   }
 }
 
 export async function removeItemFromCategory(req, res) {
-  const { item_id } = req.params;
+  const { id } = req.params;
+
+  if (!id) {
+    return ApiResponse(res, 400, null, "Invalid request params");
+  }
 
   try {
     await sql`
-      DELETE FROM menu_items WHERE id = ${item_id}
+      DELETE FROM menu_items WHERE id = ${id}
     `;
     return ApiResponse(res, 200, null, "Item removed successfully");
   } catch (err) {
@@ -113,13 +168,17 @@ export async function removeItemFromCategory(req, res) {
 }
 
 export async function updateMenuItem(req, res) {
-  const { item_id, name, price } = req.body;
+  const { id, name, variants } = req.body;
+
+  if (!id || !name || !variants || typeof variants !== "object") {
+    return ApiResponse(res, 400, null, "Invalid request body");
+  }
 
   try {
     await sql`
       UPDATE menu_items
-      SET name = ${name}, price = ${price}
-      WHERE id = ${item_id}
+      SET name = ${name}, variants = ${JSON.stringify(variants)}
+      WHERE id = ${id}
     `;
     return ApiResponse(res, 200, null, "Item updated successfully");
   } catch (err) {
