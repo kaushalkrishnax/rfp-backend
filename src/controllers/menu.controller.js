@@ -5,7 +5,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 export async function getCategories(req, res) {
   try {
     const categories = await sql`
-      SELECT * FROM menu_categories
+      SELECT * FROM menu
     `;
     return ApiResponse(res, 200, categories, "Categories fetched successfully");
   } catch (err) {
@@ -48,7 +48,7 @@ export async function addMenuCategory(req, res) {
 
   try {
     await sql`
-      INSERT INTO menu_categories (id, name, image)
+      INSERT INTO menu (id, name, image)
       VALUES (${id}, ${name}, ${image})
     `;
     return ApiResponse(
@@ -72,7 +72,7 @@ export async function removeMenuCategory(req, res) {
 
   try {
     await sql`
-      DELETE FROM menu_categories WHERE id = ${id}
+      DELETE FROM menu WHERE id = ${id}
     `;
     return ApiResponse(res, 200, null, "Category removed successfully");
   } catch (err) {
@@ -90,7 +90,7 @@ export async function updateMenuCategory(req, res) {
 
   try {
     await sql`
-      UPDATE menu_categories
+      UPDATE menu
       SET name = ${name}, image = ${image}
       WHERE id = ${id}
     `;
