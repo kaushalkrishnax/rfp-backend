@@ -6,7 +6,6 @@ import {
   createRefreshToken,
 } from "../utils/tokenHandler.js";
 
-// Send OTP and tell client whether to login or signup
 export const sendOTP = async (req, res) => {
   const { phone } = req.query;
   if (!phone) return ApiResponse(res, 400, null, "Missing phone number");
@@ -77,7 +76,6 @@ export const sendOTP = async (req, res) => {
   }
 };
 
-// Finalize login/signup
 export const finalizeAuth = async (req, res) => {
   const { phone, otp, full_name } = req.body || {};
   if (!phone || !otp)
@@ -142,7 +140,6 @@ export const finalizeAuth = async (req, res) => {
   }
 };
 
-// Update User Name
 export const updateUser = async (req, res) => {
   const { id } = req.params;
   const { full_name } = req.body || {};
@@ -162,7 +159,6 @@ export const updateUser = async (req, res) => {
   }
 };
 
-// Delete User
 export const deleteUser = async (req, res) => {
   const { id } = req.params;
   if (!id) return ApiResponse(res, 400, null, "Missing user id");

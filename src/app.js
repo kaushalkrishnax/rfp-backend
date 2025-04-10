@@ -2,8 +2,8 @@ import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
 import authRouter from "./routes/auth.routes.js";
-// import paymentRouter from "./routes/payment.routes.js";
-// import appRouter from "./routes/app.routes.js";
+import menuRouter from "./routes/menu.routes.js";
+
 import { ApiResponse } from "./utils/ApiResponse.js";
 /** Configurations */
 const app = express();
@@ -61,7 +61,6 @@ app.get("/api/v1", (req, res) => {
 });
 
 app.use("/api/v1/auth", authRouter);
-// app.use("/api/v1/payments", paymentRouter);
-// app.use("/api/v1/app", appRouter);
+app.use("/api/v1/menu", menuRouter);
 
 export { app };
