@@ -14,7 +14,7 @@ export async function createRazorpayOrder(req, res) {
     }
 
     const options = {
-      amount: Number(amount),
+      amount: Number(amount) * 100,
       currency: "INR",
       payment_capture: 1,
     };
@@ -22,11 +22,12 @@ export async function createRazorpayOrder(req, res) {
     const razorpayOrder = await razorpay.orders.create(options);
     return ApiResponse(
       res,
-      201,
+      201,  
       razorpayOrder,
       "Razorpay order created successfully"
     );
   } catch (error) {
+    console.error("Error creating Razorpay order:", error);
     return ApiResponse(res, 500, null, error.message);
   }
 }
@@ -98,9 +99,11 @@ export const verifyRazorpayOrder = async (req, res) => {
         "Payment verified and order recorded successfully"
       );
     } catch (error) {
+      console.error("Error creating order:", error);
       return ApiResponse(res, 500, null, error.message);
     }
   } else {
+    console.error("Payment verification failed");
     return ApiResponse(res, 400, null, "Payment verification failed");
   }
 };
@@ -143,6 +146,7 @@ export const createCodOrder = async (req, res) => {
 
     return ApiResponse(res, 201, order, "COD Order created successfully");
   } catch (error) {
+    console.error("Error creating COD order:", error);
     return ApiResponse(res, 500, null, error.message);
   }
 };
