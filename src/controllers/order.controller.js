@@ -32,7 +32,7 @@ export async function createRazorpayOrder(req, res) {
 }
 
 // Verify Razorpay payment and create order
-export const verifyRazorpayPayment = async (req, res) => {
+export const verifyRazorpayOrder = async (req, res) => {
   const {
     user_id,
     items,
