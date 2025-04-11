@@ -24,6 +24,7 @@
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
     "postgres": "^3.4.5",
+    "razorpay": "^2.9.6",
     "uuid": "^11.1.0"
   }
 }

@@ -3,6 +3,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import authRouter from "./routes/auth.routes.js";
 import menuRouter from "./routes/menu.routes.js";
+import orderRouter from "./routes/order.routes.js";
 
 import { ApiResponse } from "./utils/ApiResponse.js";
 /** Configurations */
@@ -62,5 +63,6 @@ app.get("/api/v1", (req, res) => {
 
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/menu", menuRouter);
+app.use("/api/v1/orders", orderRouter);
 
 export { app };
