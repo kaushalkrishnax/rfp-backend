@@ -25,7 +25,7 @@ export const sendOTP = async (req, res) => {
     `;
 
     await fetch(
-      `https://graph.facebook.com/v17.0/${process.env.WAB_PHNO_ID}/messages`,
+      `https://graph.facebook.com/v22.0/${process.env.WAB_PHNO_ID}/messages`,
       {
         method: "POST",
         headers: {
