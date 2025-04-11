@@ -37,6 +37,27 @@ export async function getItemsByCategory(req, res) {
   }
 }
 
+export async function getTopItems(req, res) {
+  try {
+    const items = await sql`
+      SELECT DISTINCT ON (menu_items.id)
+        menu_items.id,
+        menu_items.category_id,
+        menu_items.name,
+        menu.image AS category_image
+      FROM menu_items
+      INNER JOIN menu ON menu_items.category_id = menu.id
+      ORDER BY menu_items.id, RANDOM()
+      LIMIT 8
+    `;
+
+    return ApiResponse(res, 200, items, "Top items fetched successfully");
+  } catch (err) {
+    console.error("Error fetching top items:", err);
+    return ApiResponse(res, 500, null, "Failed to fetch top items");
+  }
+}
+
 export async function addMenuCategory(req, res) {
   const { name, image } = req.body;
 

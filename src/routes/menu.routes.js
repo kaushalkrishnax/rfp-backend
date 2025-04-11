@@ -8,6 +8,7 @@ import {
   addItemToCategory,
   removeItemFromCategory,
   updateMenuItem,
+  getTopItems,
 } from "../controllers/menu.controller.js";
 import { verifyToken } from "../middlewares/auth.middleware.js";
 
@@ -20,6 +21,7 @@ router.post("/categories/add", verifyToken, addMenuCategory);
 router.delete("/categories/remove/:id", verifyToken, removeMenuCategory);
 router.put("/categories/update", verifyToken, updateMenuCategory);
 
+router.get("/items", getTopItems);
 router.post("/items/add", verifyToken, addItemToCategory);
 router.delete("/items/remove/:id", verifyToken, removeItemFromCategory);
 router.put("/items/update", verifyToken, updateMenuItem);
