@@ -40,15 +40,15 @@ export async function getItemsByCategory(req, res) {
 export async function getTopItems(req, res) {
   try {
     const items = await sql`
-      SELECT DISTINCT ON (menu_items.id)
+      SELECT DISTINCT ON (menu_items.category_id)
         menu_items.id,
         menu_items.category_id,
         menu_items.name,
         menu.image AS category_image
       FROM menu_items
       INNER JOIN menu ON menu_items.category_id = menu.id
-      ORDER BY menu_items.id, RANDOM()
-      LIMIT 8
+      ORDER BY menu_items.category_id, RANDOM()
+      LIMIT 8;
     `;
 
     return ApiResponse(res, 200, items, "Top items fetched successfully");

@@ -111,7 +111,7 @@ export const finalizeAuth = async (req, res) => {
     }
 
     const [existingUser] = await sql`
-      SELECT id, full_name, phone, refresh_token FROM users WHERE phone = ${phone}
+      SELECT id, full_name, phone, refresh_token, role FROM users WHERE phone = ${phone}
     `;
 
     if (existingUser) {
@@ -140,7 +140,7 @@ export const finalizeAuth = async (req, res) => {
     const [newUser] = await sql`
     INSERT INTO users (id, full_name, phone, refresh_token)
     VALUES (${user_id}, ${full_name}, ${phone}, ${refresh_token})
-    RETURNING id, full_name, phone
+    RETURNING id, full_name, phone, role
     `;
 
     const access_token = await createAccessToken(refresh_token);

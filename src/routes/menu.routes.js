@@ -14,8 +14,8 @@ import { verifyToken } from "../middlewares/auth.middleware.js";
 
 const router = Router();
 
-router.get("/categories", getCategories);
-router.get("/categories/:id", getItemsByCategory);
+router.get("/categories", verifyToken, getCategories);
+router.get("/categories/:id", verifyToken, getItemsByCategory);
 
 router.post("/categories/add", verifyToken, addMenuCategory);
 router.delete("/categories/remove/:id", verifyToken, removeMenuCategory);

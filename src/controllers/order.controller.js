@@ -22,7 +22,7 @@ export async function createRazorpayOrder(req, res) {
     const razorpayOrder = await razorpay.orders.create(options);
     return ApiResponse(
       res,
-      201,  
+      201,
       razorpayOrder,
       "Razorpay order created successfully"
     );
@@ -34,8 +34,9 @@ export async function createRazorpayOrder(req, res) {
 
 // Verify Razorpay payment and create order
 export const verifyRazorpayOrder = async (req, res) => {
+  const { id: user_id } = req.user;
+
   const {
-    user_id,
     items,
     razorpay_order_id,
     razorpay_payment_id,
@@ -48,7 +49,6 @@ export const verifyRazorpayOrder = async (req, res) => {
     !amount ||
     !razorpay_order_id ||
     !razorpay_payment_id ||
-    !user_id ||
     !items ||
     !items.length
   ) {
@@ -110,15 +110,12 @@ export const verifyRazorpayOrder = async (req, res) => {
 
 // COD order creation
 export const createCodOrder = async (req, res) => {
-  const { user_id, items, amount } = req.body;
+  const { id: user_id } = req.user;
 
-  if (!user_id || !amount || !items || !items.length) {
-    return ApiResponse(
-      res,
-      400,
-      null,
-      "Missing 'user_id', 'amount' or 'items'"
-    );
+  const { items, amount } = req.body;
+
+  if (!amount || !items || !items.length) {
+    return ApiResponse(res, 400, null, "Missing 'amount' or 'items'");
   }
 
   try {
@@ -152,13 +149,27 @@ export const createCodOrder = async (req, res) => {
 };
 
 // 🔍 Get all orders (admin)
-export const getOrders = async (req, res) => {
+export const getAdminOrders = async (req, res) => {
   try {
-    const orders = await sql`
-      SELECT * FROM orders
-      ORDER BY created_at DESC
-      WHERE status = ${req.query.status || "pending"}
-      LIMIT 10 OFFSET ${req.query.offset || 0}`;
+    let statusFilter = req.query.status;
+    let offset = parseInt(req.query.offset) || 0;
+
+    let orders;
+
+    if (statusFilter === "all") {
+      orders = await sql`
+        SELECT * FROM orders
+        ORDER BY created_at DESC
+        LIMIT 10 OFFSET ${offset}
+      `;
+    } else {
+      orders = await sql`
+        SELECT * FROM orders
+        WHERE status = ${statusFilter || "pending"}
+        ORDER BY created_at DESC
+        LIMIT 10 OFFSET ${offset}
+      `;
+    }
 
     return ApiResponse(res, 200, orders, "Fetched all orders successfully");
   } catch (error) {
@@ -167,20 +178,56 @@ export const getOrders = async (req, res) => {
   }
 };
 
-// 🔍 Get all orders for a specific user
-export const getUserOrders = async (req, res) => {
-  const { user_id } = req.params;
-  if (!user_id) {
-    return ApiResponse(res, 400, null, "Missing user_id in params");
+export const updateAdminOrder = async (req, res) => {
+  const { id: order_id } = req.params;
+  if (!order_id) {
+    return ApiResponse(res, 400, null, "Missing 'order_id' in params");
+  }
+
+  if (!req.body.status) {
+    return ApiResponse(res, 400, null, "Missing 'status' in request body");
   }
 
   try {
-    const orders = await sql`
-      SELECT * FROM orders
-      WHERE user_id = ${user_id}
-      ORDER BY created_at DESC
-      LIMIT 10 OFFSET ${req.query.offset || 0}
+    const [updatedOrder] = await sql`
+      UPDATE orders
+      SET status = ${req.body.status || "pending"}
+      WHERE id = ${order_id}
+      RETURNING *;
     `;
+    return ApiResponse(res, 200, updatedOrder, "Order updated successfully");
+  } catch (error) {
+    console.error("Error updating order:", error);
+    return ApiResponse(res, 500, null, error.message);
+  }
+};
+
+// 🔍 Get all orders for a specific user
+export const getUserOrders = async (req, res) => {
+  const { id: user_id } = req.user;
+
+  try {
+    let statusFilter = req.query.status;
+    let offset = parseInt(req.query.offset) || 0;
+
+    let orders;
+
+    if (statusFilter === "all") {
+      orders = await sql`
+        SELECT * FROM orders
+        WHERE user_id = ${user_id}
+        ORDER BY created_at DESC
+        LIMIT 10 OFFSET ${offset}
+      `;
+    } else {
+      orders = await sql`
+        SELECT * FROM orders
+        WHERE user_id = ${user_id}
+          AND status = ${statusFilter || "pending"}
+        ORDER BY created_at DESC
+        LIMIT 10 OFFSET ${offset}
+      `;
+    }
     return ApiResponse(res, 200, orders, "Fetched user orders successfully");
   } catch (error) {
     console.error("Error fetching user orders:", error);
@@ -190,7 +237,7 @@ export const getUserOrders = async (req, res) => {
 
 // 🔍 Get order by ID
 export const getOrderById = async (req, res) => {
-  const { order_id } = req.params;
+  const { id: order_id } = req.params;
   if (!order_id) {
     return ApiResponse(res, 400, null, "Missing order_id in params");
   }
