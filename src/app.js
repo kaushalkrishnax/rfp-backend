@@ -45,13 +45,9 @@ app.use((req, res, next) => {
     }
 
     return next();
-  }
-
-  if (!isApiRoute) {
+  } else {
     return ApiResponse(res, 403, null, "Forbidden: Access denied");
   }
-
-  next();
 });
 
 app.get("/api", (req, res) => {
