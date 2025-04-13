@@ -10,20 +10,23 @@ import {
   updateMenuItem,
   getTopItems,
 } from "../controllers/menu.controller.js";
-import { verifyToken } from "../middlewares/auth.middleware.js";
+import {
+  verifyUserToken,
+  verifyAdminToken,
+} from "../middlewares/auth.middleware.js";
 
 const router = Router();
 
-router.get("/categories", verifyToken, getCategories);
-router.get("/categories/:id", verifyToken, getItemsByCategory);
+router.get("/categories", verifyUserToken, getCategories);
+router.get("/categories/:id", verifyUserToken, getItemsByCategory);
+router.get("/items", verifyUserToken, getTopItems);
 
-router.post("/categories/add", verifyToken, addMenuCategory);
-router.delete("/categories/remove/:id", verifyToken, removeMenuCategory);
-router.put("/categories/update", verifyToken, updateMenuCategory);
+router.post("/categories/add", verifyAdminToken, addMenuCategory);
+router.delete("/categories/remove/:id", verifyAdminToken, removeMenuCategory);
+router.put("/categories/update", verifyAdminToken, updateMenuCategory);
 
-router.get("/items", getTopItems);
-router.post("/items/add", verifyToken, addItemToCategory);
-router.delete("/items/remove/:id", verifyToken, removeItemFromCategory);
-router.put("/items/update", verifyToken, updateMenuItem);
+router.post("/items/add", verifyAdminToken, addItemToCategory);
+router.delete("/items/remove/:id", verifyAdminToken, removeItemFromCategory);
+router.put("/items/update", verifyAdminToken, updateMenuItem);
 
 export default router;

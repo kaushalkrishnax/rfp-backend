@@ -72,6 +72,7 @@ export const sendOTP = async (req, res) => {
 
     return ApiResponse(res, 200, { phone, method }, "OTP sent successfully");
   } catch (error) {
+    console.error("Error sending OTP:", error);
     return ApiResponse(res, 500, null, error.message);
   }
 };
@@ -152,6 +153,7 @@ export const finalizeAuth = async (req, res) => {
       "User signed up successfully"
     );
   } catch (error) {
+    console.error("Error finalizing authentication:", error);
     return ApiResponse(res, 500, null, error.message);
   } finally {
     await sql`DELETE FROM user_otps WHERE phone = ${phone}`;
@@ -173,6 +175,7 @@ export const updateUser = async (req, res) => {
     if (!result) return ApiResponse(res, 404, null, "User not found");
     return ApiResponse(res, 200, result, "User updated");
   } catch (error) {
+    console.error("Error updating user:", error);
     return ApiResponse(res, 500, null, error.message);
   }
 };
@@ -185,6 +188,7 @@ export const deleteUser = async (req, res) => {
     await sql`DELETE FROM users WHERE id = ${id}`;
     return ApiResponse(res, 200, null, "User deleted successfully");
   } catch (error) {
+    console.error("Error deleting user:", error);
     return ApiResponse(res, 500, null, error.message);
   }
 };

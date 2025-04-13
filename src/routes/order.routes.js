@@ -1,19 +1,27 @@
 import { Router } from "express";
-import { verifyToken } from "../middlewares/auth.middleware.js";
+import {
+  verifyAdminToken,
+  verifyUserToken,
+} from "../middlewares/auth.middleware.js";
 import {
   getUserOrders,
   createRazorpayOrder,
   verifyRazorpayOrder,
   createCodOrder,
   getOrderById,
+  getAdminOrders,
+  updateAdminOrder,
 } from "../controllers/order.controller.js";
 
 const router = Router();
 
-router.get("/", verifyToken, getUserOrders);
-router.post("/create/razorpay", verifyToken, createRazorpayOrder);
-router.post("/verify/razorpay", verifyToken, verifyRazorpayOrder);
-router.post("/create/cod", verifyToken, createCodOrder);
-router.get("/order/:id", verifyToken, getOrderById);
+router.get("/user", verifyUserToken, getUserOrders);
+router.post("/create/razorpay", verifyUserToken, createRazorpayOrder);
+router.post("/verify/razorpay", verifyUserToken, verifyRazorpayOrder);
+router.post("/create/cod", verifyUserToken, createCodOrder);
+router.get("/:id", verifyUserToken, getOrderById);
+
+router.get("/admin", verifyAdminToken, getAdminOrders);
+router.put("/update/:id", verifyAdminToken, updateAdminOrder);
 
 export default router;
