@@ -1,3 +1,4 @@
+import admin from "firebase-admin";
 import { v4 as uuidv4 } from "uuid";
 import { sql } from "../db/index.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
@@ -5,77 +6,7 @@ import {
   createAccessToken,
   createRefreshToken,
 } from "../utils/tokenHandler.js";
-
-export const sendOTP = async (req, res) => {
-  const { phone } = req.query;
-  if (!phone) return ApiResponse(res, 400, null, "Missing phone number");
-
-  const otp = Math.floor(1000 + Math.random() * 9000).toString();
-
-  try {
-    await sql`
-      INSERT INTO user_otps (phone, otp)
-      VALUES (${phone}, ${otp})
-      ON CONFLICT (phone) DO UPDATE
-      SET otp = ${otp}
-    `;
-
-    const [user] = await sql`
-      SELECT id FROM users WHERE phone = ${phone}
-    `;
-
-    await fetch(
-      `https://graph.facebook.com/v22.0/${process.env.WAB_PHNO_ID}/messages`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${process.env.WAB_API_ACCESS_TOKEN}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          messaging_product: "whatsapp",
-          to: `91${phone}`,
-          type: "template",
-          template: {
-            name: "verification_otp",
-            language: {
-              code: "en_US",
-            },
-            components: [
-              {
-                type: "body",
-                parameters: [
-                  {
-                    type: "text",
-                    text: otp.toString(),
-                  },
-                ],
-              },
-              {
-                type: "button",
-                sub_type: "url",
-                index: "0",
-                parameters: [
-                  {
-                    type: "text",
-                    text: otp,
-                  },
-                ],
-              },
-            ],
-          },
-        }),
-      }
-    );
-
-    const method = user ? "ToLogin" : "ToSignup";
-
-    return ApiResponse(res, 200, { phone, method }, "OTP sent successfully");
-  } catch (error) {
-    console.error("Error sending OTP:", error);
-    return ApiResponse(res, 500, null, error.message);
-  }
-};
+import { getAuth } from "firebase-admin/auth";
 
 export const refreshAccessToken = async (req, res) => {
   const { refresh_token } = req.body;
@@ -85,9 +16,9 @@ export const refreshAccessToken = async (req, res) => {
 
   try {
     const access_token = await createAccessToken(refresh_token);
-
     return ApiResponse(res, 200, { access_token }, "Access token refreshed");
   } catch (error) {
+    console.error("Refresh token error:", error);
     return ApiResponse(
       res,
       403,
@@ -98,40 +29,42 @@ export const refreshAccessToken = async (req, res) => {
 };
 
 export const finalizeAuth = async (req, res) => {
-  const { phone, otp, full_name } = req.body || {};
-  if (!phone || !otp)
-    return ApiResponse(res, 400, null, "Missing 'phone' or 'OTP'");
+  const { idToken } = req.body;
+
+  if (!idToken) {
+    return ApiResponse(res, 400, null, "Missing 'idToken' or 'fcm_token'");
+  }
 
   try {
-    const [entry] = await sql`
-      SELECT otp FROM user_otps WHERE phone = ${phone}
-    `;
+    const decodedToken = await getAuth().verifyIdToken(idToken);
+    const phone = decodedToken.phone_number;
 
-    if (!entry || entry.otp !== otp.toString()) {
-      return ApiResponse(res, 401, null, "Invalid or expired OTP");
+    if (!phone) {
+      return ApiResponse(res, 400, null, "Phone number not found in token");
+    }
+
+    const userRecord = await getAuth().getUserByPhoneNumber(phone);
+    if (!userRecord) {
+      return ApiResponse(res, 404, null, "User not found in Firebase");
     }
 
     const [existingUser] = await sql`
-      SELECT id, full_name, phone, refresh_token, role FROM users WHERE phone = ${phone}
+      SELECT id, phone, refresh_token, role FROM users WHERE phone = ${phone}
     `;
 
     if (existingUser) {
       const access_token = await createAccessToken(existingUser.refresh_token);
-
       return ApiResponse(
         res,
         200,
-        { ...existingUser, access_token },
+        {
+          id: existingUser.id,
+          phone: existingUser.phone,
+          role: existingUser.role,
+          access_token,
+          refresh_token: existingUser.refresh_token,
+        },
         "Login successful"
-      );
-    }
-
-    if (!full_name) {
-      return ApiResponse(
-        res,
-        400,
-        null,
-        "Full name required to complete signup"
       );
     }
 
@@ -139,9 +72,9 @@ export const finalizeAuth = async (req, res) => {
     const refresh_token = await createRefreshToken();
 
     const [newUser] = await sql`
-    INSERT INTO users (id, full_name, phone, refresh_token)
-    VALUES (${user_id}, ${full_name}, ${phone}, ${refresh_token})
-    RETURNING id, full_name, phone, role
+      INSERT INTO users (id, phone, refresh_token)
+      VALUES (${user_id}, ${phone}, ${refresh_token})
+      RETURNING id, phone, role
     `;
 
     const access_token = await createAccessToken(refresh_token);
@@ -149,31 +82,27 @@ export const finalizeAuth = async (req, res) => {
     return ApiResponse(
       res,
       201,
-      { ...newUser, refresh_token, access_token },
+      { ...newUser, access_token, refresh_token },
       "User signed up successfully"
     );
   } catch (error) {
-    console.error("Error finalizing authentication:", error);
-    return ApiResponse(res, 500, null, error.message);
-  } finally {
-    await sql`DELETE FROM user_otps WHERE phone = ${phone}`;
+    console.error("Firebase auth failed:", error);
+    return ApiResponse(
+      res,
+      401,
+      null,
+      "Invalid or expired Firebase credentials"
+    );
   }
 };
 
 export const updateUser = async (req, res) => {
   const { id } = req.params;
-  const { full_name } = req.body || {};
-  if (!id || !full_name)
-    return ApiResponse(res, 400, null, "Missing id or full_name");
+
+  if (!id) return ApiResponse(res, 400, null, "Missing user ID");
 
   try {
-    const [result] = await sql`
-      UPDATE users SET full_name = ${full_name}
-      WHERE id = ${id}
-      RETURNING id, full_name
-    `;
-    if (!result) return ApiResponse(res, 404, null, "User not found");
-    return ApiResponse(res, 200, result, "User updated");
+    return ApiResponse(res, 200, null, "User updated successfully");
   } catch (error) {
     console.error("Error updating user:", error);
     return ApiResponse(res, 500, null, error.message);
@@ -182,13 +111,41 @@ export const updateUser = async (req, res) => {
 
 export const deleteUser = async (req, res) => {
   const { id } = req.params;
-  if (!id) return ApiResponse(res, 400, null, "Missing user id");
+
+  if (!id) return ApiResponse(res, 400, null, "Missing user ID");
 
   try {
     await sql`DELETE FROM users WHERE id = ${id}`;
     return ApiResponse(res, 200, null, "User deleted successfully");
   } catch (error) {
     console.error("Error deleting user:", error);
+    return ApiResponse(res, 500, null, error.message);
+  }
+};
+
+export const storeUserFcmToken = async (req, res) => {
+  const { id: userId } = req.user;
+  const { fcm_token } = req.body;
+
+  if (!fcm_token) {
+    return ApiResponse(res, 400, null, "Missing FCM token");
+  }
+
+  try {
+    await sql`
+      UPDATE users
+      SET fcm_token = ${fcm_token}
+      WHERE id = ${userId}
+    `;
+
+    return ApiResponse(
+      res,
+      200,
+      null,
+      "FCM token stored successfully"
+    );
+  } catch (error) {
+    console.error("Error storing FCM token:", error);
     return ApiResponse(res, 500, null, error.message);
   }
 };

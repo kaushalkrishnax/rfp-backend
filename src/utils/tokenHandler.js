@@ -18,26 +18,20 @@ export async function createRefreshToken() {
  */
 export async function createAccessToken(refresh_token) {
   const [result] = await sql`
-    SELECT id, full_name, phone, refresh_token FROM users
+    SELECT id, phone, refresh_token FROM users
     WHERE refresh_token = ${refresh_token}
   `;
 
   if (!result) return null;
 
   const access_token = jwt.sign(
-    { user_id: result.id, full_name: result.full_name, phone: result.phone },
+    { user_id: result.id, phone: result.phone },
     SECRET_KEY,
     {
       algorithm: "HS256",
       expiresIn: "3h",
     }
   );
-
-  await sql`
-    UPDATE users
-    SET access_token = ${access_token}
-    WHERE id = ${result.id}
-  `;
 
   return access_token;
 }

@@ -16,12 +16,13 @@ import {
 const router = Router();
 
 router.get("/user", verifyUserToken, getUserOrders);
+router.get("/admin", verifyAdminToken, getAdminOrders);
+router.get("/:id", verifyUserToken, getOrderById);
+
 router.post("/create/razorpay", verifyUserToken, createRazorpayOrder);
 router.post("/verify/razorpay", verifyUserToken, verifyRazorpayOrder);
 router.post("/create/cod", verifyUserToken, createCodOrder);
-router.get("/:id", verifyUserToken, getOrderById);
 
-router.get("/admin", verifyAdminToken, getAdminOrders);
 router.put("/update/:id", verifyAdminToken, updateAdminOrder);
 
 export default router;

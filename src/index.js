@@ -1,4 +1,6 @@
 import dotenv from "dotenv";
+import admin from "firebase-admin";
+
 dotenv.config({ path: "./.env" });
 
 import { connectDB } from "./db/index.js";
@@ -11,6 +13,11 @@ connectDB()
         `⚙️  Server is running at port : ${process.env.PORT || 8000}`
       );
     });
+    if (!admin.apps.length) {
+      admin.initializeApp({
+        credential: admin.credential.cert(process.env.FIREBASE_SERVICE_ACCOUNT),
+      });
+    }
     app.on("error", (error) => {
       console.error("Server failed to listen :: ", error);
       throw error;

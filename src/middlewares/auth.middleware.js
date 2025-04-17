@@ -18,7 +18,7 @@ const verifyToken = (allowedRoles) => {
       });
 
       const [user] = await sql`
-        SELECT id, full_name, phone, role
+        SELECT id, phone, role
         FROM users
         WHERE id = ${decodedInfo.user_id}
         AND phone = ${decodedInfo.phone}
@@ -35,10 +35,11 @@ const verifyToken = (allowedRoles) => {
       req.user = user;
       next();
     } catch (error) {
+      console.error("Error verifying token:", error);
       return ApiResponse(res, 401, null, error.message || "Invalid 'access_token'");
     }
   };
 };
 
-export const verifyUserToken = verifyToken(["user", "developer"]);
-export const verifyAdminToken = verifyToken(["admin", "developer"]);
+export const verifyUserToken = verifyToken(["user", "admin"]);
+export const verifyAdminToken = verifyToken(["admin"]);
