@@ -6,34 +6,50 @@ import { v4 as uuidv4 } from "uuid";
 import admin from "firebase-admin";
 
 export async function sendOrderNotification({
-  orderId,
-  userId,
+  order_id,
+  user_id,
   status,
   title,
-  body,
-  data = {},
+  forAdmin = false,
 }) {
   try {
     const [user] = await sql`
-      SELECT fcm_token FROM users WHERE id = ${userId}
+      SELECT fcm_token FROM users WHERE id = ${user_id}
     `;
 
     const [adminUser] = await sql`
       SELECT fcm_token FROM users WHERE role = 'admin' LIMIT 1
     `;
 
+    const statusMessages = {
+      pending: `is pending confirmation.`,
+      processing: `is being prepared.`,
+      delivered: `has been delivered.`,
+      cancelled: `has been cancelled.`,
+    };
+
+    const statusColors = {
+      pending: "fe9a00",
+      processing: "2b7fff",
+      delivered: "00c950",
+      cancelled: "fb2c36",
+    };
+
+    const defaultMessage = `has been updated.`;
+
     if (user?.fcm_token) {
       const userMessage = {
-        notification: {
-          title: title || `Order ${status}`,
-          body: body || `Your order #${orderId.slice(0, 8)} has been ${status}`,
-        },
         data: {
-          orderId,
-          status,
+          title: title || `Order ${status}`,
+          body: `Your order #${order_id.slice(0, 8)} ${
+            statusMessages[status] || defaultMessage
+          }`,
+          image: `https://placehold.co/300x300/${
+            statusColors[status]
+          }/ffffff?text=${status.toUpperCase()}`,
+          order_id,
           timestamp: new Date().toISOString(),
           click_action: "OPEN_ORDER_DETAIL",
-          ...data,
         },
         token: user.fcm_token,
       };
@@ -45,21 +61,19 @@ export async function sendOrderNotification({
       }
     }
 
-    if (adminUser?.fcm_token) {
+    if (adminUser?.fcm_token && forAdmin) {
       const adminMessage = {
-        notification: {
-          title: "New Order Received",
-          body: `Order #${orderId.slice(
-            0,
-            8
-          )} has been placed with ${status} status`,
-        },
         data: {
-          orderId,
-          status,
+          title: "New Order Received",
+          body: `Order #${order_id.slice(0, 8)} ${
+            statusMessages[status] || defaultMessage
+          }`,
+          image: `https://placehold.co/300x300/${
+            statusColors[status]
+          }/ffffff?text=${status.toUpperCase()}`,
+          order_id,
           timestamp: new Date().toISOString(),
-          click_action: "OPEN_ADMIN_ORDER_DETAIL",
-          ...data,
+          click_action: "OPEN_ORDER_DETAIL",
         },
         token: adminUser.fcm_token,
       };
@@ -79,7 +93,7 @@ export async function sendOrderNotification({
 }
 
 export async function createOrder({
-  userId,
+  user_id,
   items,
   amount,
   paymentMethod,
@@ -88,7 +102,7 @@ export async function createOrder({
   razorpayPaymentId = null,
 }) {
   try {
-    const orderId = uuidv4();
+    const order_id = uuidv4();
 
     const [order] = await sql`
       INSERT INTO orders (
@@ -103,8 +117,8 @@ export async function createOrder({
         razorpay_payment_id
       )
       VALUES (
-        ${orderId},
-        ${userId},
+        ${order_id},
+        ${user_id},
         ${JSON.stringify(items)},
         ${Number(amount)},
         'pending',
@@ -117,16 +131,11 @@ export async function createOrder({
     `;
 
     await sendOrderNotification({
-      orderId,
-      userId,
-      status: "created",
-      title: "Order Placed Successfully",
-      body: `Your order #${orderId.slice(0, 8)} has been placed successfully`,
-      data: {
-        amount: String(amount),
-        paymentMethod,
-        items: JSON.stringify(items),
-      },
+      order_id,
+      user_id,
+      status: "pending",
+      title: "Order Placed",
+      forAdmin: true,
     });
 
     return order;
@@ -164,7 +173,7 @@ export async function createRazorpayOrder(req, res) {
 }
 
 export const verifyRazorpayOrder = async (req, res) => {
-  const { id: userId } = req.user;
+  const { id: user_id } = req.user;
 
   const {
     items,
@@ -197,7 +206,7 @@ export const verifyRazorpayOrder = async (req, res) => {
   if (isAuthentic) {
     try {
       const order = await createOrder({
-        userId,
+        user_id,
         items,
         amount: Number(amount),
         paymentMethod: "razorpay",
@@ -223,7 +232,7 @@ export const verifyRazorpayOrder = async (req, res) => {
 };
 
 export const createCodOrder = async (req, res) => {
-  const { id: userId } = req.user;
+  const { id: user_id } = req.user;
   const { items, amount } = req.body;
 
   if (!amount || !items || !items.length) {
@@ -232,7 +241,7 @@ export const createCodOrder = async (req, res) => {
 
   try {
     const order = await createOrder({
-      userId,
+      user_id,
       items,
       amount: Number(amount),
       paymentMethod: "cod",
@@ -247,8 +256,8 @@ export const createCodOrder = async (req, res) => {
 };
 
 export const updateAdminOrder = async (req, res) => {
-  const { id: orderId } = req.params;
-  if (!orderId) {
+  const { id: order_id } = req.params;
+  if (!order_id) {
     return ApiResponse(res, 400, null, "Missing 'order_id' in params");
   }
 
@@ -260,7 +269,7 @@ export const updateAdminOrder = async (req, res) => {
     const [updatedOrder] = await sql`
       UPDATE orders
       SET status = ${req.body.status}
-      WHERE id = ${orderId}
+      WHERE id = ${order_id}
       RETURNING *;
     `;
 
@@ -269,16 +278,10 @@ export const updateAdminOrder = async (req, res) => {
     }
 
     await sendOrderNotification({
-      orderId,
-      userId: updatedOrder.user_id,
+      order_id,
+      user_id: updatedOrder.user_id,
       status: updatedOrder.status,
-      title: `Order ${updatedOrder.status}`,
-      body: `Your order #${orderId.slice(0, 8)} has been ${
-        updatedOrder.status
-      }`,
-      data: {
-        updatedAt: new Date().toISOString(),
-      },
+      title: "Order Updated",
     });
 
     return ApiResponse(res, 200, updatedOrder, "Order updated successfully");
