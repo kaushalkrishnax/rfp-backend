@@ -39,17 +39,14 @@ export async function sendOrderNotification({
 
     if (user?.fcm_token) {
       const userMessage = {
-        notification: {
+        data: {
           title: title || `Order ${status}`,
           body: `Your order #${order_id.slice(0, 8)} ${
             statusMessages[status] || defaultMessage
           }`,
-          icon: "https://i.ibb.co/5WRkvdkd/rfp.png",
           image: `https://placehold.co/300x300/${
             statusColors[status]
           }/ffffff?text=${status.toUpperCase()}`,
-        },
-        data: {
           order_id,
           timestamp: new Date().toISOString(),
           click_action: "OPEN_ORDER_DETAIL",
@@ -67,17 +64,14 @@ export async function sendOrderNotification({
 
     if (adminUser?.fcm_token && forAdmin) {
       const adminMessage = {
-        notification: {
+        data: {
           title: "New Order Received",
           body: `Order #${order_id.slice(0, 8)} ${
             statusMessages[status] || defaultMessage
           }`,
-          icon: "https://i.ibb.co/5WRkvdkd/rfp.png",
           image: `https://placehold.co/300x300/${
             statusColors[status]
           }/ffffff?text=${status.toUpperCase()}`,
-        },
-        data: {
           order_id,
           timestamp: new Date().toISOString(),
           click_action: "OPEN_ORDER_DETAIL",
