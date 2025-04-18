@@ -44,6 +44,7 @@ export async function sendOrderNotification({
           body: `Your order #${order_id.slice(0, 8)} ${
             statusMessages[status] || defaultMessage
           }`,
+          icon: "https://i.ibb.co/5WRkvdkd/rfp.png",
           image: `https://placehold.co/300x300/${
             statusColors[status]
           }/ffffff?text=${status.toUpperCase()}`,
@@ -70,6 +71,7 @@ export async function sendOrderNotification({
           body: `Order #${order_id.slice(0, 8)} ${
             statusMessages[status] || defaultMessage
           }`,
+          icon: "https://i.ibb.co/5WRkvdkd/rfp.png",
           image: `https://placehold.co/300x300/${
             statusColors[status]
           }/ffffff?text=${status.toUpperCase()}`,
