@@ -56,7 +56,6 @@ export async function sendOrderNotification({
 
       try {
         await admin.messaging().send(userMessage);
-        console.log("User notification sent");
       } catch (error) {
         console.error("Error sending user notification:", error);
       }
@@ -81,7 +80,6 @@ export async function sendOrderNotification({
 
       try {
         await admin.messaging().send(adminMessage);
-        console.log("Admin notification sent");
       } catch (error) {
         console.error("Error sending admin notification:", error);
       }
