@@ -301,20 +301,35 @@ export const getAdminOrders = async (req, res) => {
 
     if (statusFilter === "all") {
       orders = await sql`
-        SELECT * FROM orders
-        ORDER BY created_at DESC
+        SELECT orders.*, users.phone AS customer_phone, users.location AS customer_location
+        FROM orders
+        JOIN users ON users.id = orders.user_id
+        ORDER BY orders.created_at DESC
         LIMIT ${limit} OFFSET ${offset}
       `;
     } else {
       orders = await sql`
-        SELECT * FROM orders
+        SELECT orders.*, users.phone AS customer_phone, users.location AS customer_location
+        FROM orders
+        JOIN users ON users.id = orders.user_id
         WHERE status = ${statusFilter || "pending"}
         ORDER BY created_at DESC
         LIMIT ${limit} OFFSET ${offset}
       `;
     }
 
-    return ApiResponse(res, 200, orders, "Fetched all orders successfully");
+    const stitchedOrders = orders.map(order => {
+      const { customer_phone, customer_location, ...rest } = order;
+      return {
+        ...rest,
+        customer: {
+          phone: customer_phone,
+          location: customer_location,
+        },
+      };
+    });
+
+    return ApiResponse(res, 200, stitchedOrders, "Fetched all orders successfully");
   } catch (error) {
     console.error("Error fetching orders:", error);
     return ApiResponse(res, 500, null, error.message);

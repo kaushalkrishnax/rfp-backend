@@ -2,7 +2,7 @@ import { Router } from "express";
 import {
   refreshAccessToken,
   finalizeAuth,
-  updateUser,
+  updateUserLocation,
   deleteUser,
   storeUserFcmToken,
 } from "../controllers/auth.controller.js";
@@ -12,8 +12,8 @@ const router = Router();
 
 router.post("/refresh", refreshAccessToken);
 router.post("/finalize", finalizeAuth);
-router.put("/update/:id", verifyUserToken, updateUser);
-router.delete("/delete/:id", verifyUserToken, deleteUser);
+router.put("/update/location", verifyUserToken, updateUserLocation);
+router.delete("/delete", verifyUserToken, deleteUser);
 router.post("/fcm", verifyUserToken, storeUserFcmToken);
 
 export default router;

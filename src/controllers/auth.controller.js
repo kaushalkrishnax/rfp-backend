@@ -49,7 +49,7 @@ export const finalizeAuth = async (req, res) => {
     }
 
     const [existingUser] = await sql`
-      SELECT id, phone, refresh_token, role FROM users WHERE phone = ${phone}
+      SELECT id, phone, refresh_token, role, location FROM users WHERE phone = ${phone}
     `;
 
     if (existingUser) {
@@ -61,6 +61,7 @@ export const finalizeAuth = async (req, res) => {
           id: existingUser.id,
           phone: existingUser.phone,
           role: existingUser.role,
+          location: existingUser.location,
           access_token,
           refresh_token: existingUser.refresh_token,
         },
@@ -74,7 +75,7 @@ export const finalizeAuth = async (req, res) => {
     const [newUser] = await sql`
       INSERT INTO users (id, phone, refresh_token)
       VALUES (${user_id}, ${phone}, ${refresh_token})
-      RETURNING id, phone, role
+      RETURNING id, phone, role, location
     `;
 
     const access_token = await createAccessToken(refresh_token);
@@ -96,13 +97,19 @@ export const finalizeAuth = async (req, res) => {
   }
 };
 
-export const updateUser = async (req, res) => {
-  const { id } = req.params;
+export const updateUserLocation = async (req, res) => {
+  const { id: user_id } = req.user;
+  const { location } = req.body;
 
-  if (!id) return ApiResponse(res, 400, null, "Missing user ID");
+  if (!location) return ApiResponse(res, 400, null, "Missing location");
 
   try {
-    return ApiResponse(res, 200, null, "User updated successfully");
+    await sql`
+      UPDATE users
+      SET location = ${location}
+      WHERE id = ${user_id}
+    `;
+    return ApiResponse(res, 200, null, "User location updated successfully");
   } catch (error) {
     console.error("Error updating user:", error);
     return ApiResponse(res, 500, null, error.message);
@@ -110,12 +117,10 @@ export const updateUser = async (req, res) => {
 };
 
 export const deleteUser = async (req, res) => {
-  const { id } = req.params;
-
-  if (!id) return ApiResponse(res, 400, null, "Missing user ID");
+  const { id: user_id } = req.user;
 
   try {
-    await sql`DELETE FROM users WHERE id = ${id}`;
+    await sql`DELETE FROM users WHERE id = ${user_id}`;
     return ApiResponse(res, 200, null, "User deleted successfully");
   } catch (error) {
     console.error("Error deleting user:", error);
@@ -124,7 +129,7 @@ export const deleteUser = async (req, res) => {
 };
 
 export const storeUserFcmToken = async (req, res) => {
-  const { id: userId } = req.user;
+  const { id: user_id } = req.user;
   const { fcm_token } = req.body;
 
   if (!fcm_token) {
@@ -135,15 +140,10 @@ export const storeUserFcmToken = async (req, res) => {
     await sql`
       UPDATE users
       SET fcm_token = ${fcm_token}
-      WHERE id = ${userId}
+      WHERE id = ${user_id}
     `;
 
-    return ApiResponse(
-      res,
-      200,
-      null,
-      "FCM token stored successfully"
-    );
+    return ApiResponse(res, 200, null, "FCM token stored successfully");
   } catch (error) {
     console.error("Error storing FCM token:", error);
     return ApiResponse(res, 500, null, error.message);

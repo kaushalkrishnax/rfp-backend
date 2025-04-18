@@ -9,6 +9,7 @@ import {
   removeItemFromCategory,
   updateMenuItem,
   getTopItems,
+  getPopularItems,
 } from "../controllers/menu.controller.js";
 import {
   verifyUserToken,
@@ -20,6 +21,7 @@ const router = Router();
 router.get("/categories", verifyUserToken, getCategories);
 router.get("/categories/:id", verifyUserToken, getItemsByCategory);
 router.get("/items", verifyUserToken, getTopItems);
+router.get("/popular", verifyUserToken, getPopularItems);
 
 router.post("/categories/add", verifyAdminToken, addMenuCategory);
 router.delete("/categories/remove/:id", verifyAdminToken, removeMenuCategory);

@@ -37,24 +37,96 @@ export async function getItemsByCategory(req, res) {
   }
 }
 
+export async function getPopularItems(req, res) {
+  try {
+    const popularItems = await sql`
+      WITH ItemOrderCounts AS (
+        SELECT
+          (elem->>'id') AS item_id,
+          COALESCE((elem->>'quantity')::int, 1) AS quantity
+        FROM
+          orders,
+          jsonb_array_elements(items) AS elem
+        WHERE
+          jsonb_typeof(items) = 'array'
+          AND elem->>'id' IS NOT NULL
+      ),
+      AggregatedCounts AS (
+        SELECT
+          item_id,
+          SUM(quantity)::int AS total_quantity
+        FROM ItemOrderCounts
+        GROUP BY item_id
+      )
+      SELECT
+        mi.*,
+        m.image AS category_image,
+        m.name AS category_name,
+        COALESCE(ac.total_quantity, 0) AS order_count
+      FROM menu_items mi
+      INNER JOIN menu m ON mi.category_id = m.id
+      LEFT JOIN AggregatedCounts ac ON mi.id::text = ac.item_id
+      ORDER BY order_count DESC
+      LIMIT 6;
+    `;
+
+    return ApiResponse(res, 200, popularItems, "Popular items fetched successfully");
+  } catch (error) {
+    console.error("Error fetching popular items:", error);
+    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+    return ApiResponse(res, 500, null, `Failed to fetch popular items: ${errorMessage}`);
+  }
+}
+
 export async function getTopItems(req, res) {
   try {
-    const items = await sql`
-      SELECT DISTINCT ON (menu_items.category_id)
-        menu_items.id,
-        menu_items.category_id,
-        menu_items.name,
-        menu.image AS category_image
-      FROM menu_items
-      INNER JOIN menu ON menu_items.category_id = menu.id
-      ORDER BY menu_items.category_id, RANDOM()
+    const topItems = await sql`
+      WITH ItemOrderCounts AS (
+        SELECT
+          (elem->>'id') AS item_id,
+          COALESCE((elem->>'quantity')::int, 1) AS quantity
+        FROM
+          orders,
+          jsonb_array_elements(items) AS elem -- Use json_array_elements for JSON type
+        WHERE
+          jsonb_typeof(items) = 'array'
+          AND elem->>'id' IS NOT NULL
+      ),
+      AggregatedCounts AS (
+        SELECT
+          item_id,
+          SUM(quantity)::int AS total_quantity
+        FROM ItemOrderCounts
+        GROUP BY item_id
+      ),
+      RankedItems AS (
+        SELECT
+          mi.id,
+          mi.category_id,
+          mi.name,
+          m.image AS category_image,
+          COALESCE(ac.total_quantity, 0) AS order_count,
+          ROW_NUMBER() OVER(PARTITION BY mi.category_id ORDER BY COALESCE(ac.total_quantity, 0) DESC, mi.id) as rn
+        FROM menu_items mi
+        INNER JOIN menu m ON mi.category_id = m.id
+        LEFT JOIN AggregatedCounts ac ON mi.id::text = ac.item_id
+      )
+      SELECT
+        id,
+        category_id,
+        name,
+        category_image, order_count
+      FROM RankedItems
+      WHERE rn = 1
+      ORDER BY order_count DESC, category_id -- Order the final categories by popularity, then ID
       LIMIT 8;
     `;
 
-    return ApiResponse(res, 200, items, "Top items fetched successfully");
-  } catch (err) {
-    console.error("Error fetching top items:", err);
-    return ApiResponse(res, 500, null, "Failed to fetch top items");
+    return ApiResponse(res, 200, topItems, "Top items fetched successfully");
+  } catch (error) {
+    console.error("Error fetching top items:", error);
+    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+    return ApiResponse(res, 500, null, `Failed to fetch top items: ${errorMessage}`);
   }
 }
 
