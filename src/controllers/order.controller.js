@@ -27,14 +27,7 @@ export async function sendOrderNotification({
       delivered: `has been delivered.`,
       cancelled: `has been cancelled.`,
     };
-
-    const statusColors = {
-      pending: "fe9a00",
-      processing: "2b7fff",
-      delivered: "00c950",
-      cancelled: "fb2c36",
-    };
-
+    
     const defaultMessage = `has been updated.`;
 
     if (user?.fcm_token) {
@@ -44,9 +37,6 @@ export async function sendOrderNotification({
           body: `Your order #${order_id.slice(0, 8)} ${
             statusMessages[status] || defaultMessage
           }`,
-          image: `https://placehold.co/300x300/${
-            statusColors[status]
-          }/ffffff?text=${status.toUpperCase()}`,
           order_id,
           timestamp: new Date().toISOString(),
           click_action: "OPEN_ORDER_DETAIL",
@@ -68,9 +58,6 @@ export async function sendOrderNotification({
           body: `Order #${order_id.slice(0, 8)} ${
             statusMessages[status] || defaultMessage
           }`,
-          image: `https://placehold.co/300x300/${
-            statusColors[status]
-          }/ffffff?text=${status.toUpperCase()}`,
           order_id,
           timestamp: new Date().toISOString(),
           click_action: "OPEN_ORDER_DETAIL",
