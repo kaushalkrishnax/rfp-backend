@@ -39,7 +39,61 @@ export async function getItemsByCategory(req, res) {
 
 export async function getPopularItems(req, res) {
   try {
-    const popularItems = await sql`
+    const items = await sql`
+      WITH ItemOrderCounts AS (
+        SELECT
+          (elem->>'id') AS item_id,
+          COALESCE((elem->>'quantity')::int, 1) AS quantity
+        FROM orders,
+          jsonb_array_elements(items) AS elem
+        WHERE jsonb_typeof(items) = 'array'
+          AND elem->>'id' IS NOT NULL
+      ),
+      AggregatedCounts AS (
+        SELECT
+          item_id,
+          SUM(quantity)::int AS total_quantity
+        FROM ItemOrderCounts
+        GROUP BY item_id
+      )
+      SELECT
+        mi.id,
+        mi.category_id,
+        mi.name,
+        mi.variants,
+        m.image AS category_image,
+        m.name AS category_name,
+        COALESCE(ac.total_quantity, 0) AS order_count
+      FROM menu_items mi
+      INNER JOIN menu m ON mi.category_id = m.id
+      LEFT JOIN AggregatedCounts ac ON mi.id::text = ac.item_id
+      LIMIT 20;
+    `;
+
+    const processedItems = items.map(item => {
+      const variants = Array.isArray(item.variants) ? item.variants : [];
+      const max_price = variants.reduce((max, v) => {
+        const price = parseInt(v.price);
+        return isNaN(price) ? max : Math.max(max, price);
+      }, 0);
+
+      return { ...item, max_price };
+    });
+
+    const topItems = processedItems
+      .sort((a, b) => b.order_count - a.order_count)
+      .slice(0, 6);
+
+    return ApiResponse(res, 200, topItems, "Popular items fetched successfully");
+  } catch (error) {
+    console.error("Error fetching popular items:", error);
+    return ApiResponse(res, 500, null, `Failed to fetch popular items: ${error?.message || "Unknown error"}`);
+  }
+}
+
+export async function getTopItems(req, res) {
+  try {
+    const items = await sql`
       WITH ItemOrderCounts AS (
         SELECT
           (elem->>'id') AS item_id,
@@ -59,74 +113,33 @@ export async function getPopularItems(req, res) {
         GROUP BY item_id
       )
       SELECT
-        mi.*,
+        mi.id,
+        mi.category_id,
+        mi.name,
         m.image AS category_image,
-        m.name AS category_name,
         COALESCE(ac.total_quantity, 0) AS order_count
       FROM menu_items mi
       INNER JOIN menu m ON mi.category_id = m.id
-      LEFT JOIN AggregatedCounts ac ON mi.id::text = ac.item_id
-      ORDER BY order_count DESC
-      LIMIT 6;
+      LEFT JOIN AggregatedCounts ac ON mi.id::text = ac.item_id;
     `;
 
-    return ApiResponse(res, 200, popularItems, "Popular items fetched successfully");
-  } catch (error) {
-    console.error("Error fetching popular items:", error);
-    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
-    return ApiResponse(res, 500, null, `Failed to fetch popular items: ${errorMessage}`);
-  }
-}
+    const categoryMap = new Map();
 
-export async function getTopItems(req, res) {
-  try {
-    const topItems = await sql`
-      WITH ItemOrderCounts AS (
-        SELECT
-          (elem->>'id') AS item_id,
-          COALESCE((elem->>'quantity')::int, 1) AS quantity
-        FROM
-          orders,
-          jsonb_array_elements(items) AS elem -- Use json_array_elements for JSON type
-        WHERE
-          jsonb_typeof(items) = 'array'
-          AND elem->>'id' IS NOT NULL
-      ),
-      AggregatedCounts AS (
-        SELECT
-          item_id,
-          SUM(quantity)::int AS total_quantity
-        FROM ItemOrderCounts
-        GROUP BY item_id
-      ),
-      RankedItems AS (
-        SELECT
-          mi.id,
-          mi.category_id,
-          mi.name,
-          m.image AS category_image,
-          COALESCE(ac.total_quantity, 0) AS order_count,
-          ROW_NUMBER() OVER(PARTITION BY mi.category_id ORDER BY COALESCE(ac.total_quantity, 0) DESC, mi.id) as rn
-        FROM menu_items mi
-        INNER JOIN menu m ON mi.category_id = m.id
-        LEFT JOIN AggregatedCounts ac ON mi.id::text = ac.item_id
-      )
-      SELECT
-        id,
-        category_id,
-        name,
-        category_image, order_count
-      FROM RankedItems
-      WHERE rn = 1
-      ORDER BY order_count DESC, category_id -- Order the final categories by popularity, then ID
-      LIMIT 8;
-    `;
+    for (const item of items) {
+      const existing = categoryMap.get(item.category_id);
+      if (!existing || item.order_count > existing.order_count) {
+        categoryMap.set(item.category_id, item);
+      }
+    }
+
+    const topItems = Array.from(categoryMap.values())
+      .sort((a, b) => b.order_count - a.order_count)
+      .slice(0, 8);
 
     return ApiResponse(res, 200, topItems, "Top items fetched successfully");
   } catch (error) {
     console.error("Error fetching top items:", error);
-    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
-    return ApiResponse(res, 500, null, `Failed to fetch top items: ${errorMessage}`);
+    return ApiResponse(res, 500, null, `Failed to fetch top items: ${error?.message || "Unknown error"}`);
   }
 }
 

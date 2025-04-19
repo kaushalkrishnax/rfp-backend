@@ -10,6 +10,7 @@ import {
   createCodOrder,
   getOrderById,
   getAdminOrders,
+  getOrdersStats,
   updateAdminOrder,
 } from "../controllers/order.controller.js";
 
@@ -17,6 +18,7 @@ const router = Router();
 
 router.get("/user", verifyUserToken, getUserOrders);
 router.get("/admin", verifyAdminToken, getAdminOrders);
+router.get("/stats", verifyAdminToken, getOrdersStats);
 router.get("/:id", verifyUserToken, getOrderById);
 
 router.post("/create/razorpay", verifyUserToken, createRazorpayOrder);

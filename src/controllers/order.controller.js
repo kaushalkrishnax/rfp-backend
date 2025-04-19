@@ -245,7 +245,7 @@ export const createCodOrder = async (req, res) => {
       items,
       amount: Number(amount),
       paymentMethod: "cod",
-      paymentStatus: "pending",
+      paymentStatus: "success",
     });
 
     return ApiResponse(res, 201, order, "COD Order created successfully");
@@ -294,7 +294,7 @@ export const updateAdminOrder = async (req, res) => {
 export const getAdminOrders = async (req, res) => {
   try {
     let statusFilter = req.query.status;
-    let offset = parseInt(req.query.offset) || 0;
+    let offset = parseInt(req.query.offset);
     let limit = parseInt(req.query.limit) || 10;
 
     let orders;
@@ -336,12 +336,44 @@ export const getAdminOrders = async (req, res) => {
   }
 };
 
+export const getOrdersStats = async (req, res) => {
+  try {
+    const [
+      totalOrdersQuery,
+      todaysOrdersQuery,
+      deliveredQuery,
+      totalEarningsQuery,
+      todaysEarningsQuery,
+    ] = await Promise.all([
+      sql`SELECT COUNT(*) AS total_orders FROM orders`,
+      sql`SELECT COUNT(*) AS todays_orders FROM orders WHERE DATE(created_at) = CURRENT_DATE`,
+      sql`SELECT COUNT(*) AS delivered FROM orders WHERE status = 'delivered'`,
+      sql`SELECT COALESCE(SUM(amount), 0) AS total_earnings FROM orders WHERE payment_status = 'success'`,
+      sql`SELECT COALESCE(SUM(amount), 0) AS todays_earnings FROM orders WHERE payment_status = 'success' AND DATE(created_at) = CURRENT_DATE`,
+    ]);
+    
+    const stats = {
+      totalEarnings: Number(totalEarningsQuery[0]?.total_earnings) || 0,
+      todaysEarnings: Number(todaysEarningsQuery[0]?.todays_earnings) || 0,
+      totalOrders: Number(totalOrdersQuery[0]?.total_orders) || 0,
+      todaysOrders: Number(todaysOrdersQuery[0]?.todays_orders) || 0,
+      delivered: Number(deliveredQuery[0]?.delivered) || 0,
+    };
+
+    return ApiResponse(res, 200, stats, "Fetched Order stats successfully");
+  } catch (error) {
+    console.error("Error fetching orders stats:", error);
+    return ApiResponse(res, 500, null, "Failed to fetch order stats");
+  }
+};
+
+
 export const getUserOrders = async (req, res) => {
   const { id: user_id } = req.user;
 
   try {
     let statusFilter = req.query.status;
-    let offset = parseInt(req.query.offset) || 0;
+    let offset = parseInt(req.query.offset);
     let limit = parseInt(req.query.limit) || 10;
 
     let orders;

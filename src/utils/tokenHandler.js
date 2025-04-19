@@ -29,7 +29,7 @@ export async function createAccessToken(refresh_token) {
     SECRET_KEY,
     {
       algorithm: "HS256",
-      expiresIn: "3h",
+      expiresIn: "1h",
     }
   );
 
