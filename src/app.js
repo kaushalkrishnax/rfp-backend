@@ -23,7 +23,7 @@ const allowedOrigins = [
   "http://192.168.1.3:3000",
   "https://royalfoodplaza.vercel.app",
   "capacitor://localhost",
-  "http://localhost"
+  "https://localhost"
 ];
 
 /** CORS Middleware */
