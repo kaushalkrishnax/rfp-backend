@@ -23,6 +23,7 @@ const allowedOrigins = [
   "http://192.168.1.3:3000",
   "http://192.168.1.3:8100",
   "https://royalfoodplaza.vercel.app",
+  "https://royalfoodplaza.web.app",
   "https://app.rfp.com",
   "capacitor://app.rfp.com"
 ];
