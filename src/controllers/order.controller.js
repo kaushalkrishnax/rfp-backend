@@ -37,10 +37,15 @@ export async function sendOrderNotification({
           body: `Your order #${order_id.slice(0, 8)} ${
             statusMessages[status] || defaultMessage
           }`,
-          icon: "https://i.postimg.cc/05tQXJzs/icon-512.png",
+          click_action: "OPEN_ORDER_DETAIL",
         },
         data: {
+          title: title || `Order ${status}`,
+          body: `Your order #${order_id.slice(0, 8)} ${
+            statusMessages[status] || defaultMessage
+          }`,
           order_id,
+          timestamp: new Date().toISOString(),
           click_action: "OPEN_ORDER_DETAIL",
         },
         token: user.fcm_token,
@@ -60,10 +65,15 @@ export async function sendOrderNotification({
           body: `Order #${order_id.slice(0, 8)} ${
             statusMessages[status] || defaultMessage
           }`,
-          icon: "https://i.postimg.cc/05tQXJzs/icon-512.png",
+          click_action: "OPEN_ORDER_DETAIL",
         },
         data: {
+          title: "New Order Received",
+          body: `Order #${order_id.slice(0, 8)} ${
+            statusMessages[status] || defaultMessage
+          }`,
           order_id,
+          timestamp: new Date().toISOString(),
           click_action: "OPEN_ORDER_DETAIL",
         },
         token: adminUser.fcm_token,
