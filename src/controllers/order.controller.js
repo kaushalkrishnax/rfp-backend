@@ -27,11 +27,17 @@ export async function sendOrderNotification({
       delivered: `has been delivered.`,
       cancelled: `has been cancelled.`,
     };
-    
+
     const defaultMessage = `has been updated.`;
 
     if (user?.fcm_token) {
       const userMessage = {
+        notification: {
+          title: title || `Order ${status}`,
+          body: `Your order #${order_id.slice(0, 8)} ${
+            statusMessages[status] || defaultMessage
+          }`,
+        },
         data: {
           title: title || `Order ${status}`,
           body: `Your order #${order_id.slice(0, 8)} ${
@@ -53,6 +59,12 @@ export async function sendOrderNotification({
 
     if (adminUser?.fcm_token && forAdmin) {
       const adminMessage = {
+        notification: {
+          title: "New Order Received",
+          body: `Order #${order_id.slice(0, 8)} ${
+            statusMessages[status] || defaultMessage
+          }`,
+        },
         data: {
           title: "New Order Received",
           body: `Order #${order_id.slice(0, 8)} ${
@@ -305,7 +317,7 @@ export const getAdminOrders = async (req, res) => {
       `;
     }
 
-    const stitchedOrders = orders.map(order => {
+    const stitchedOrders = orders.map((order) => {
       const { customer_phone, customer_location, ...rest } = order;
       return {
         ...rest,
@@ -316,7 +328,12 @@ export const getAdminOrders = async (req, res) => {
       };
     });
 
-    return ApiResponse(res, 200, stitchedOrders, "Fetched all orders successfully");
+    return ApiResponse(
+      res,
+      200,
+      stitchedOrders,
+      "Fetched all orders successfully"
+    );
   } catch (error) {
     console.error("Error fetching orders:", error);
     return ApiResponse(res, 500, null, error.message);
@@ -338,7 +355,7 @@ export const getOrdersStats = async (req, res) => {
       sql`SELECT COALESCE(SUM(amount), 0) AS total_earnings FROM orders WHERE payment_status = 'success'`,
       sql`SELECT COALESCE(SUM(amount), 0) AS todays_earnings FROM orders WHERE payment_status = 'success' AND DATE(created_at) = CURRENT_DATE`,
     ]);
-    
+
     const stats = {
       totalEarnings: Number(totalEarningsQuery[0]?.total_earnings) || 0,
       todaysEarnings: Number(todaysEarningsQuery[0]?.todays_earnings) || 0,
@@ -353,7 +370,6 @@ export const getOrdersStats = async (req, res) => {
     return ApiResponse(res, 500, null, "Failed to fetch order stats");
   }
 };
-
 
 export const getUserOrders = async (req, res) => {
   const { id: user_id } = req.user;
