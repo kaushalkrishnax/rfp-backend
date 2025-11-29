@@ -18,10 +18,10 @@ const verifyToken = (allowedRoles) => {
       });
 
       const [user] = await sql`
-        SELECT id, phone, role
+        SELECT id, email, role
         FROM users
         WHERE id = ${decodedInfo.user_id}
-        AND phone = ${decodedInfo.phone}
+        AND email = ${decodedInfo.email}
       `;
 
       if (!user) {

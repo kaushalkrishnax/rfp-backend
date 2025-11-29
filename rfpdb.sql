@@ -2,12 +2,15 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 16.8
--- Dumped by pg_dump version 16.8 (Ubuntu 16.8-0ubuntu0.24.04.1)
+\restrict eF7uvZlTnbG5wWlfdxnlCKaEHl9bOc6rdc6U5AYMjpGXarxap2yqd8OrHBbto5R
+
+-- Dumped from database version 17.7
+-- Dumped by pg_dump version 17.7 (Ubuntu 17.7-3.pgdg24.04+1)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
 SELECT pg_catalog.set_config('search_path', '', false);
@@ -17,7 +20,23 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
--- Name: order_status; Type: TYPE; Schema: public; Owner: kaushal
+-- Name: public; Type: SCHEMA; Schema: -; Owner: avnadmin
+--
+
+-- *not* creating schema, since initdb creates it
+
+
+ALTER SCHEMA public OWNER TO avnadmin;
+
+--
+-- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: avnadmin
+--
+
+COMMENT ON SCHEMA public IS '';
+
+
+--
+-- Name: order_status; Type: TYPE; Schema: public; Owner: avnadmin
 --
 
 CREATE TYPE public.order_status AS ENUM (
@@ -28,10 +47,10 @@ CREATE TYPE public.order_status AS ENUM (
 );
 
 
-ALTER TYPE public.order_status OWNER TO kaushal;
+ALTER TYPE public.order_status OWNER TO avnadmin;
 
 --
--- Name: payment_method; Type: TYPE; Schema: public; Owner: kaushal
+-- Name: payment_method; Type: TYPE; Schema: public; Owner: avnadmin
 --
 
 CREATE TYPE public.payment_method AS ENUM (
@@ -40,10 +59,10 @@ CREATE TYPE public.payment_method AS ENUM (
 );
 
 
-ALTER TYPE public.payment_method OWNER TO kaushal;
+ALTER TYPE public.payment_method OWNER TO avnadmin;
 
 --
--- Name: payment_status; Type: TYPE; Schema: public; Owner: kaushal
+-- Name: payment_status; Type: TYPE; Schema: public; Owner: avnadmin
 --
 
 CREATE TYPE public.payment_status AS ENUM (
@@ -52,10 +71,10 @@ CREATE TYPE public.payment_status AS ENUM (
 );
 
 
-ALTER TYPE public.payment_status OWNER TO kaushal;
+ALTER TYPE public.payment_status OWNER TO avnadmin;
 
 --
--- Name: user_role; Type: TYPE; Schema: public; Owner: kaushal
+-- Name: user_role; Type: TYPE; Schema: public; Owner: avnadmin
 --
 
 CREATE TYPE public.user_role AS ENUM (
@@ -65,14 +84,14 @@ CREATE TYPE public.user_role AS ENUM (
 );
 
 
-ALTER TYPE public.user_role OWNER TO kaushal;
+ALTER TYPE public.user_role OWNER TO avnadmin;
 
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
 
 --
--- Name: menu; Type: TABLE; Schema: public; Owner: kaushal
+-- Name: menu; Type: TABLE; Schema: public; Owner: avnadmin
 --
 
 CREATE TABLE public.menu (
@@ -82,10 +101,10 @@ CREATE TABLE public.menu (
 );
 
 
-ALTER TABLE public.menu OWNER TO kaushal;
+ALTER TABLE public.menu OWNER TO avnadmin;
 
 --
--- Name: menu_items; Type: TABLE; Schema: public; Owner: kaushal
+-- Name: menu_items; Type: TABLE; Schema: public; Owner: avnadmin
 --
 
 CREATE TABLE public.menu_items (
@@ -96,61 +115,49 @@ CREATE TABLE public.menu_items (
 );
 
 
-ALTER TABLE public.menu_items OWNER TO kaushal;
+ALTER TABLE public.menu_items OWNER TO avnadmin;
 
 --
--- Name: orders; Type: TABLE; Schema: public; Owner: kaushal
+-- Name: orders; Type: TABLE; Schema: public; Owner: avnadmin
 --
 
 CREATE TABLE public.orders (
     id uuid NOT NULL,
     user_id uuid NOT NULL,
-    menu_item_ids uuid[] NOT NULL,
     amount numeric(10,2) NOT NULL,
     status public.order_status NOT NULL,
     payment_method public.payment_method NOT NULL,
     payment_status public.payment_status NOT NULL,
     razorpay_order_id text,
     razorpay_payment_id text,
-    created_at timestamp without time zone DEFAULT now() NOT NULL
+    created_at timestamp without time zone DEFAULT now() NOT NULL,
+    items jsonb
 );
 
 
-ALTER TABLE public.orders OWNER TO kaushal;
+ALTER TABLE public.orders OWNER TO avnadmin;
 
 --
--- Name: user_otps; Type: TABLE; Schema: public; Owner: kaushal
---
-
-CREATE TABLE public.user_otps (
-    phone text NOT NULL,
-    otp text NOT NULL,
-    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    expires_at timestamp without time zone DEFAULT (CURRENT_TIMESTAMP + '00:05:00'::interval)
-);
-
-
-ALTER TABLE public.user_otps OWNER TO kaushal;
-
---
--- Name: users; Type: TABLE; Schema: public; Owner: kaushal
+-- Name: users; Type: TABLE; Schema: public; Owner: avnadmin
 --
 
 CREATE TABLE public.users (
     id uuid NOT NULL,
-    phone character varying(15) NOT NULL,
+    email character varying(255) NOT NULL,
     full_name character varying(100) NOT NULL,
     refresh_token character varying(256) NOT NULL,
     access_token character varying(400),
     role public.user_role DEFAULT 'user'::public.user_role NOT NULL,
-    created_at timestamp without time zone DEFAULT now() NOT NULL
+    created_at timestamp without time zone DEFAULT now() NOT NULL,
+    fcm_token text,
+    location text
 );
 
 
-ALTER TABLE public.users OWNER TO kaushal;
+ALTER TABLE public.users OWNER TO avnadmin;
 
 --
--- Data for Name: menu; Type: TABLE DATA; Schema: public; Owner: kaushal
+-- Data for Name: menu; Type: TABLE DATA; Schema: public; Owner: avnadmin
 --
 
 COPY public.menu (id, name, image) FROM stdin;
@@ -176,7 +183,7 @@ dd760774-f458-4893-b2e0-8438b648f047	मशरूम	https://static.toiimg.com/t
 
 
 --
--- Data for Name: menu_items; Type: TABLE DATA; Schema: public; Owner: kaushal
+-- Data for Name: menu_items; Type: TABLE DATA; Schema: public; Owner: avnadmin
 --
 
 COPY public.menu_items (id, category_id, name, variants) FROM stdin;
@@ -262,34 +269,26 @@ b3aea0d3-9942-4ba2-9ac2-360a4fc8c011	20acfe22-bd5f-45e6-b199-3f1395e59723	चि
 
 
 --
--- Data for Name: orders; Type: TABLE DATA; Schema: public; Owner: kaushal
+-- Data for Name: orders; Type: TABLE DATA; Schema: public; Owner: avnadmin
 --
 
-COPY public.orders (id, user_id, menu_item_ids, amount, status, payment_method, payment_status, razorpay_order_id, razorpay_payment_id, created_at) FROM stdin;
+COPY public.orders (id, user_id, amount, status, payment_method, payment_status, razorpay_order_id, razorpay_payment_id, created_at, items) FROM stdin;
+2373f01b-5c36-41fd-8660-283ac78b13be	88d2a55f-1f4d-4b5c-968d-eda55f0e891e	65.00	pending	cod	success	\N	\N	2025-11-29 10:15:33.336734	"[{\\"id\\":\\"99215e77-0e64-4213-b7e2-a81fc0ee7596\\",\\"category_id\\":\\"e180ee01-acd6-4ee3-8e13-07ddc6cd4a83\\",\\"name\\":\\"भेज चाउमीन \\",\\"variants\\":[{\\"name\\":\\"Half\\",\\"price\\":25},{\\"name\\":\\"Full\\",\\"price\\":40}],\\"quantity\\":1,\\"variant\\":{\\"name\\":\\"Half\\",\\"price\\":25}}]"
 \.
 
 
 --
--- Data for Name: user_otps; Type: TABLE DATA; Schema: public; Owner: kaushal
+-- Data for Name: users; Type: TABLE DATA; Schema: public; Owner: avnadmin
 --
 
-COPY public.user_otps (phone, otp, created_at, expires_at) FROM stdin;
-6200507995	4721	2025-04-10 16:13:07.409691	2025-04-10 16:18:07.409691
+COPY public.users (id, email, full_name, refresh_token, access_token, role, created_at, fcm_token, location) FROM stdin;
+88d2a55f-1f4d-4b5c-968d-eda55f0e891e	kaushalkrishnax@gmail.com	Kaushal Krishna	1660f72d30ae3f1dc1fb1d017d045d1a430027265f01cbe642a40852ac4b3cece0f3e9f7123447bd96ddde73a0e8054ea91c8c44b09182eb8d72d7076f566f81	\N	user	2025-11-29 10:08:21.395671	f6Z1ikOE_VxRqS0Z6pmjl1:APA91bFB5gqHtpN7wqh0nJHnq7yAk2gjBqjr0NNlzivcZmbEmPnBmrpU_lDunvGHHciGLEaCrxnx_dLQ3o1dVrCf_RmLVfdLX4ZfFf5kgW_Vdn0D6ybF2Lk	\N
+641eec02-afb2-46cc-90ae-e622d936d35c	kaushalkrishna011@gmail.com	Kaushal Krishna	0f0cc172414e87ba1bfbce7c0e4d9bfccc886d293efcc10d219eb9f841c9bb87dac7e1b6735d8216587ac86babaaf42355f730a5d23a48ed92c25789518c1373	\N	user	2025-11-29 09:52:11.85135	f6Z1ikOE_VxRqS0Z6pmjl1:APA91bFB5gqHtpN7wqh0nJHnq7yAk2gjBqjr0NNlzivcZmbEmPnBmrpU_lDunvGHHciGLEaCrxnx_dLQ3o1dVrCf_RmLVfdLX4ZfFf5kgW_Vdn0D6ybF2Lk	\N
 \.
 
 
 --
--- Data for Name: users; Type: TABLE DATA; Schema: public; Owner: kaushal
---
-
-COPY public.users (id, phone, full_name, refresh_token, access_token, role, created_at) FROM stdin;
-161efc88-b7d7-4e06-b864-09c011195128	9123268178	Ayush Kumar	3fcb041894fdf3cca37f6572940fcf7a6a0bf71bd55f91d7be49f991ea82d1bc7dc526d3911005a4284ee4fc66e154575670266e7a5154779fd445faa6b3b901	eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMTYxZWZjODgtYjdkNy00ZTA2LWI4NjQtMDljMDExMTk1MTI4IiwiZnVsbF9uYW1lIjoiQXl1c2ggS3VtYXIiLCJwaG9uZSI6IjkxMjMyNjgxNzgiLCJpYXQiOjE3NDQyODIzNjQsImV4cCI6MTc0NDI5MzE2NH0.VNyEv8sfjzHiL9ou8NlMKG6tZp_4HWTBC64fG5yFmE4	user	2025-04-11 11:45:10.24861
-f57d897a-ff62-431f-869e-037160a91bc8	9304385581	Kaushal Krishna	e77172624f2323ca05fa51588628922af6097a1f33a0ffe6b4677d14b24c69161a8ab2235fbf2114700c02abfbd5c82ceb163165f4c82bb19165a0d204cf6a7e	eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZjU3ZDg5N2EtZmY2Mi00MzFmLTg2OWUtMDM3MTYwYTkxYmM4IiwiZnVsbF9uYW1lIjoiS2F1c2hhbCBLcmlzaG5hIiwicGhvbmUiOiI5MzA0Mzg1NTgxIiwiaWF0IjoxNzQ0MzY1Nzk3LCJleHAiOjE3NDQzNzY1OTd9.BtGmx3jlCqEufvcQkzm--7HJLTosVRbQnc0teQNRej4	developer	2025-04-11 11:45:10.24861
-\.
-
-
---
--- Name: menu menu_categories_pkey; Type: CONSTRAINT; Schema: public; Owner: kaushal
+-- Name: menu menu_categories_pkey; Type: CONSTRAINT; Schema: public; Owner: avnadmin
 --
 
 ALTER TABLE ONLY public.menu
@@ -297,7 +296,7 @@ ALTER TABLE ONLY public.menu
 
 
 --
--- Name: menu_items menu_items_pkey; Type: CONSTRAINT; Schema: public; Owner: kaushal
+-- Name: menu_items menu_items_pkey; Type: CONSTRAINT; Schema: public; Owner: avnadmin
 --
 
 ALTER TABLE ONLY public.menu_items
@@ -305,7 +304,7 @@ ALTER TABLE ONLY public.menu_items
 
 
 --
--- Name: orders orders_pkey; Type: CONSTRAINT; Schema: public; Owner: kaushal
+-- Name: orders orders_pkey; Type: CONSTRAINT; Schema: public; Owner: avnadmin
 --
 
 ALTER TABLE ONLY public.orders
@@ -313,23 +312,15 @@ ALTER TABLE ONLY public.orders
 
 
 --
--- Name: user_otps user_otps_pkey; Type: CONSTRAINT; Schema: public; Owner: kaushal
---
-
-ALTER TABLE ONLY public.user_otps
-    ADD CONSTRAINT user_otps_pkey PRIMARY KEY (phone);
-
-
---
--- Name: users users_phone_key; Type: CONSTRAINT; Schema: public; Owner: kaushal
+-- Name: users users_email_key; Type: CONSTRAINT; Schema: public; Owner: avnadmin
 --
 
 ALTER TABLE ONLY public.users
-    ADD CONSTRAINT users_phone_key UNIQUE (phone);
+    ADD CONSTRAINT users_email_key UNIQUE (email);
 
 
 --
--- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: kaushal
+-- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: avnadmin
 --
 
 ALTER TABLE ONLY public.users
@@ -337,7 +328,7 @@ ALTER TABLE ONLY public.users
 
 
 --
--- Name: menu_items menu_items_category_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: kaushal
+-- Name: menu_items menu_items_category_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: avnadmin
 --
 
 ALTER TABLE ONLY public.menu_items
@@ -345,7 +336,7 @@ ALTER TABLE ONLY public.menu_items
 
 
 --
--- Name: orders orders_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: kaushal
+-- Name: orders orders_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: avnadmin
 --
 
 ALTER TABLE ONLY public.orders
@@ -353,6 +344,13 @@ ALTER TABLE ONLY public.orders
 
 
 --
--- PostgreSQL database dump complete
+-- Name: SCHEMA public; Type: ACL; Schema: -; Owner: avnadmin
 --
 
+REVOKE USAGE ON SCHEMA public FROM PUBLIC;
+GRANT ALL ON SCHEMA public TO PUBLIC;
+
+
+--
+-- PostgreSQL database dump complete
+--

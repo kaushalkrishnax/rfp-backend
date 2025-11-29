@@ -37,19 +37,21 @@ export const finalizeAuth = async (req, res) => {
 
   try {
     const decodedToken = await getAuth().verifyIdToken(idToken);
-    const phone = decodedToken.phone_number;
+    const email = decodedToken.email;
 
-    if (!phone) {
-      return ApiResponse(res, 400, null, "Phone number not found in token");
+    console.log("Decoded Firebase token:", decodedToken);
+
+    if (!email) {
+      return ApiResponse(res, 400, null, "email not found in token");
     }
 
-    const userRecord = await getAuth().getUserByPhoneNumber(phone);
+    const userRecord = await getAuth().getUserByEmail(email);
     if (!userRecord) {
       return ApiResponse(res, 404, null, "User not found in Firebase");
     }
 
     const [existingUser] = await sql`
-      SELECT id, phone, refresh_token, role, location FROM users WHERE phone = ${phone}
+      SELECT id, email, refresh_token, role, location FROM users WHERE email = ${email}
     `;
 
     if (existingUser) {
@@ -59,7 +61,7 @@ export const finalizeAuth = async (req, res) => {
         200,
         {
           id: existingUser.id,
-          phone: existingUser.phone,
+          email: existingUser.email,
           role: existingUser.role,
           location: existingUser.location,
           access_token,
@@ -73,9 +75,9 @@ export const finalizeAuth = async (req, res) => {
     const refresh_token = await createRefreshToken();
 
     const [newUser] = await sql`
-      INSERT INTO users (id, phone, refresh_token)
-      VALUES (${user_id}, ${phone}, ${refresh_token})
-      RETURNING id, phone, role, location
+      INSERT INTO users (id, full_name, email, refresh_token)
+      VALUES (${user_id}, ${decodedToken.name}, ${email}, ${refresh_token})
+      RETURNING id, email, role, location
     `;
 
     const access_token = await createAccessToken(refresh_token);

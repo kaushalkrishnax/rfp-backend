@@ -70,7 +70,7 @@ export async function getPopularItems(req, res) {
       LIMIT 20;
     `;
 
-    const processedItems = items.map(item => {
+    const processedItems = items.map((item) => {
       const variants = Array.isArray(item.variants) ? item.variants : [];
       const max_price = variants.reduce((max, v) => {
         const price = parseInt(v.price);
@@ -84,10 +84,20 @@ export async function getPopularItems(req, res) {
       .sort((a, b) => b.order_count - a.order_count)
       .slice(0, 6);
 
-    return ApiResponse(res, 200, topItems, "Popular items fetched successfully");
+    return ApiResponse(
+      res,
+      200,
+      topItems,
+      "Popular items fetched successfully"
+    );
   } catch (error) {
     console.error("Error fetching popular items:", error);
-    return ApiResponse(res, 500, null, `Failed to fetch popular items: ${error?.message || "Unknown error"}`);
+    return ApiResponse(
+      res,
+      500,
+      null,
+      `Failed to fetch popular items: ${error?.message || "Unknown error"}`
+    );
   }
 }
 
@@ -139,7 +149,12 @@ export async function getTopItems(req, res) {
     return ApiResponse(res, 200, topItems, "Top items fetched successfully");
   } catch (error) {
     console.error("Error fetching top items:", error);
-    return ApiResponse(res, 500, null, `Failed to fetch top items: ${error?.message || "Unknown error"}`);
+    return ApiResponse(
+      res,
+      500,
+      null,
+      `Failed to fetch top items: ${error?.message || "Unknown error"}`
+    );
   }
 }
 
