@@ -300,7 +300,7 @@ export const getAdminOrders = async (req, res) => {
 
     if (statusFilter === "all") {
       orders = await sql`
-        SELECT orders.*, users.phone AS customer_phone, users.location AS customer_location
+        SELECT orders.*, users.email AS customer_email, users.location AS customer_location
         FROM orders
         JOIN users ON users.id = orders.user_id
         ORDER BY orders.created_at DESC
@@ -308,7 +308,7 @@ export const getAdminOrders = async (req, res) => {
       `;
     } else {
       orders = await sql`
-        SELECT orders.*, users.phone AS customer_phone, users.location AS customer_location
+        SELECT orders.*, users.email AS customer_email, users.location AS customer_location
         FROM orders
         JOIN users ON users.id = orders.user_id
         WHERE status = ${statusFilter || "pending"}
@@ -318,11 +318,11 @@ export const getAdminOrders = async (req, res) => {
     }
 
     const stitchedOrders = orders.map((order) => {
-      const { customer_phone, customer_location, ...rest } = order;
+      const { customer_email, customer_location, ...rest } = order;
       return {
         ...rest,
         customer: {
-          phone: customer_phone,
+          email: customer_email,
           location: customer_location,
         },
       };
