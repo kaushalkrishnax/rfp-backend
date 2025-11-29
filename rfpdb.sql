@@ -169,7 +169,7 @@ ea6e16ba-527d-494d-b346-a0c86b05d3b1	रोटी	https://media.istockphoto.com/
 95ebf245-5e35-4dbf-ad20-611ec48f6369	चिकन	https://www.whiskaffair.com/wp-content/uploads/2021/01/Chicken-Masala-2-3-1.jpg
 5776b12d-ea42-45ba-aaea-130b63c9a540	बिरयानी	https://www.indianhealthyrecipes.com/wp-content/uploads/2021/12/chicken-biryani-recipe.jpg
 f27698b5-60cc-45b3-ba80-c13800271e54	राईस	https://www.hyderabadiruchulu.com/wp-content/uploads/2018/09/masala-rice-500x360.png
-0c035160-1f23-4e77-8e0b-a46b3de4f42f	बर्गर	https://www.chicken.ca/wp-content/uploads/2017/09/Jalapeno-Popper-Chicken-Burgers-1.jpg
+0c035160-1f23-4e77-8e0b-a46b3de4f42f	बर्गर	https://www.shutterstock.com/image-photo/delicious-vegetarian-burger-fresh-toppings-600nw-2623526417.jpg
 e2724601-4a1d-49ce-bc2f-9f5383251d3e	मोमोज	https://www.thespruceeats.com/thmb/UnVh_-znw7ikMUciZIx5sNqBtTU=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/steamed-momos-wontons-1957616-hero-01-1c59e22bad0347daa8f0dfe12894bc3c.jpg
 f3ced821-2ed5-456b-a0ca-e97947e7bb8a	सूप	https://ichef.bbci.co.uk/food/ic/food_16x9_1600/recipes/goodvegetablesoup_73412_16x9.jpg
 0a24821d-2300-4033-aa2f-83e6f9919fcd	मटन	https://www.foodiaq.com/wp-content/uploads/2024/08/mutton-curry.jpg

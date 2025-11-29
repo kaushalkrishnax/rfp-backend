@@ -39,8 +39,6 @@ export const finalizeAuth = async (req, res) => {
     const decodedToken = await getAuth().verifyIdToken(idToken);
     const email = decodedToken.email;
 
-    console.log("Decoded Firebase token:", decodedToken);
-
     if (!email) {
       return ApiResponse(res, 400, null, "email not found in token");
     }

@@ -23,13 +23,15 @@ export async function getItemsByCategory(req, res) {
 
   try {
     const items = await sql`
-      SELECT * FROM menu_items WHERE category_id = ${id}
+      SELECT * FROM menu_items 
+      WHERE category_id = ${id}::uuid
     `;
 
     const formattedItems = items.map((item) => ({
       ...item,
-      variants: JSON.parse(item.variants),
+      variants: item.variants, // already jsonb → no need to parse
     }));
+
     return ApiResponse(res, 200, formattedItems, "Items fetched successfully");
   } catch (err) {
     console.error("Error fetching items:", err);
